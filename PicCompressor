@@ -1,166 +1,122 @@
-<script>
-  const fileInput = document.getElementById('file-input');
-  const uploadArea = document.getElementById('upload-area');
-  const compressBtn = document.getElementById('compress-btn');
-  const qualitySlider = document.getElementById('quality');
-  const qualityValue = document.getElementById('quality-value');
-  const resultContainer = document.getElementById('result-container');
-  const downloadBtn = document.getElementById('download-btn');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixelSqueeze Pro | Working Image Upload</title>
+    <style>
+        :root {
+            --primary: #E63946;
+            --secondary: #3A86FF;
+            --dark: #0A0A0A;
+            --light: #FFFFFF;
+        }
+        body {
+            background: var(--dark);
+            color: var(--light);
+            font-family: 'Segoe UI', sans-serif;
+            padding: 2rem;
+        }
+        .upload-area {
+            border: 2px dashed var(--secondary);
+            border-radius: 8px;
+            padding: 3rem;
+            text-align: center;
+            margin: 2rem auto;
+            max-width: 600px;
+            cursor: pointer;
+        }
+        .preview {
+            max-width: 100%;
+            max-height: 300px;
+            margin-top: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="color: var(--primary); text-align: center;">Image Upload Test</h1>
+    
+    <div class="upload-area" id="uploadArea">
+        <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: var(--secondary);"></i>
+        <h3>Click to Upload Image</h3>
+        <p>or drag and drop files here</p>
+        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        <img id="imagePreview" class="preview">
+    </div>
 
-  let originalFile = null;
-  let compressedFileBlob = null;
+    <script>
+        // DOM Elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
 
-  uploadArea.addEventListener('click', () => {
-    fileInput.click();
-  });
+        // Event Listeners
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        fileInput.addEventListener('change', (e) => {
+            if (fileInput.files.length) {
+                handleImageUpload(fileInput.files[0]);
+            }
+        });
 
-  qualitySlider.addEventListener('input', () => {
-    qualityValue.textContent = `${qualitySlider.value}%`;
-  });
+        // Drag and Drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = var(--primary);
+            uploadArea.style.backgroundColor = 'rgba(58, 134, 255, 0.1)';
+        });
 
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files.length) {
-      handleFileSelect(fileInput.files[0]);
-    }
-  });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = var(--secondary);
+            uploadArea.style.backgroundColor = 'transparent';
+        });
 
-  compressBtn.addEventListener('click', () => {
-    compressImage();
-  });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = var(--secondary);
+            uploadArea.style.backgroundColor = 'transparent';
+            
+            if (e.dataTransfer.files.length) {
+                handleImageUpload(e.dataTransfer.files[0]);
+            }
+        });
 
-  downloadBtn.addEventListener('click', () => {
-    downloadImage();
-  });
+        // Handle Image Upload
+        function handleImageUpload(file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload an image file (JPG, PNG, etc.)');
+                return;
+            }
 
-  // Add drop event too
-  uploadArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    uploadArea.style.borderColor = 'var(--primary)';
-    uploadArea.style.background = 'rgba(230, 57, 70, 0.05)';
-  });
-
-  uploadArea.addEventListener('dragleave', () => {
-    uploadArea.style.borderColor = 'var(--secondary)';
-    uploadArea.style.background = 'transparent';
-  });
-
-  uploadArea.addEventListener('drop', (e) => {
-    e.preventDefault();
-    uploadArea.style.borderColor = 'var(--secondary)';
-    uploadArea.style.background = 'transparent';
-
-    if (e.dataTransfer.files.length) {
-      handleFileSelect(e.dataTransfer.files[0]);
-    }
-  });
-
-  function formatFileSize(bytes) {
-    return (bytes / 1024).toFixed(2) + ' KB';
-  }
-
-  function handleFileSelect(file) {
-    if (!file.type.match('image.*')) {
-      alert('Please select an image file (JPG, PNG, or WebP)');
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      alert('File size exceeds 10MB limit.');
-      return;
-    }
-
-    originalFile = file;
-    compressBtn.disabled = false;
-
-    uploadArea.innerHTML = `
-      <div class="upload-icon" style="color: var(--accent);">
-        <i class="fas fa-check-circle"></i>
-      </div>
-      <h3>${file.name}</h3>
-      <p>${formatFileSize(file.size)}</p>
-    `;
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      document.getElementById('original-img').src = e.target.result;
-
-      const img = new Image();
-      img.onload = function() {
-        document.getElementById('original-dimensions').textContent = 
-          `${this.naturalWidth} × ${this.naturalHeight}`;
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-
-    document.getElementById('original-size').textContent = formatFileSize(file.size);
-  }
-
-  function compressImage() {
-    if (!originalFile) return;
-
-    compressBtn.disabled = true;
-    compressBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-
-    const quality = qualitySlider.value / 100;
-    const format = document.querySelector('input[name="format"]:checked').value;
-
-    const reader = new FileReader();
-    reader.onload = function(event) {
-      const img = new Image();
-      img.onload = function() {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0, img.width, img.height);
-
-        let mimeType;
-        if (format === 'original') {
-          mimeType = originalFile.type;
-        } else {
-          mimeType = `image/${format}`;
+            // Create preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+                
+                // Update UI
+                uploadArea.innerHTML = `
+                    <h3>${file.name}</h3>
+                    <p>${formatFileSize(file.size)}</p>
+                `;
+                uploadArea.appendChild(imagePreview);
+            };
+            reader.readAsDataURL(file);
         }
 
-        canvas.toBlob(blob => {
-          if (!blob) {
-            alert('Compression failed.');
-            return;
-          }
-
-          const url = URL.createObjectURL(blob);
-          document.getElementById('compressed-img').src = url;
-
-          const compressedImg = new Image();
-          compressedImg.onload = function() {
-            document.getElementById('compressed-dimensions').textContent = 
-              `${this.naturalWidth} × ${this.naturalHeight}`;
-          };
-          compressedImg.src = url;
-
-          document.getElementById('compressed-size').textContent = formatFileSize(blob.size);
-          const savings = 1 - (blob.size / originalFile.size);
-          document.getElementById('savings').textContent = 
-            `${Math.round(savings * 100)}% smaller (${formatFileSize(originalFile.size - blob.size)} saved)`;
-
-          compressedFileBlob = blob;
-          resultContainer.style.display = 'block';
-          compressBtn.innerHTML = '<i class="fas fa-compress-alt"></i> Compress Image';
-        }, mimeType, quality);
-      };
-      img.src = event.target.result;
-    };
-    reader.readAsDataURL(originalFile);
-  }
-
-  function downloadImage() {
-    if (!compressedFileBlob) return;
-
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(compressedFileBlob);
-    a.download = 'compressed-image';
-    a.click();
-  }
-</script>
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
+        }
+    </script>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </body>
+</html>
