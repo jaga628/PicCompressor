@@ -296,11 +296,14 @@
             <div class="upload-area" id="upload-area">
                 <div class="upload-icon">
                     <i class="fas fa-cloud-upload-alt"></i>
-                </div>
-                <h3>Drag & Drop Your Image</h3>
-                <p>or click to browse (JPG, PNG, WEBP)</p>
-                <input type="file" id="file-input" accept="image/jpeg, image/png, image/webp" style="display: none;">
-            </div>
+                <div class="upload-area" id="upload-area">
+    <div class="upload-icon">
+        <i class="fas fa-cloud-upload-alt"></i>
+    </div>
+    <h3>Drag & Drop Your Image</h3>
+    <p>or click to browse (JPG, PNG, WEBP)</p>
+    <input type="file" id="file-input" accept="image/jpeg, image/png, image/webp" style="display: none;">
+</div>
 
             <div class="controls">
                 <div class="control-group">
