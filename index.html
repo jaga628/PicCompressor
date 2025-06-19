@@ -548,3 +548,18 @@
                                 
                                 // Reset button
                    
+<script>
+    const fileInput = document.getElementById('file-input');
+    const uploadArea = document.getElementById('upload-area');
+
+    // Jab "Upload Area" pe click kare, toh file select box khule
+    uploadArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    // Jab image select ho jaye
+    fileInput.addEventListener('change', () => {
+        alert("Image selected: " + fileInput.files[0].name);
+    });
+</script>
+</body>
