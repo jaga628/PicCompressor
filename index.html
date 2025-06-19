@@ -1,0 +1,166 @@
+<script>
+  const fileInput = document.getElementById('file-input');
+  const uploadArea = document.getElementById('upload-area');
+  const compressBtn = document.getElementById('compress-btn');
+  const qualitySlider = document.getElementById('quality');
+  const qualityValue = document.getElementById('quality-value');
+  const resultContainer = document.getElementById('result-container');
+  const downloadBtn = document.getElementById('download-btn');
+
+  let originalFile = null;
+  let compressedFileBlob = null;
+
+  uploadArea.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  qualitySlider.addEventListener('input', () => {
+    qualityValue.textContent = `${qualitySlider.value}%`;
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) {
+      handleFileSelect(fileInput.files[0]);
+    }
+  });
+
+  compressBtn.addEventListener('click', () => {
+    compressImage();
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    downloadImage();
+  });
+
+  // Add drop event too
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.style.borderColor = 'var(--primary)';
+    uploadArea.style.background = 'rgba(230, 57, 70, 0.05)';
+  });
+
+  uploadArea.addEventListener('dragleave', () => {
+    uploadArea.style.borderColor = 'var(--secondary)';
+    uploadArea.style.background = 'transparent';
+  });
+
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.style.borderColor = 'var(--secondary)';
+    uploadArea.style.background = 'transparent';
+
+    if (e.dataTransfer.files.length) {
+      handleFileSelect(e.dataTransfer.files[0]);
+    }
+  });
+
+  function formatFileSize(bytes) {
+    return (bytes / 1024).toFixed(2) + ' KB';
+  }
+
+  function handleFileSelect(file) {
+    if (!file.type.match('image.*')) {
+      alert('Please select an image file (JPG, PNG, or WebP)');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size exceeds 10MB limit.');
+      return;
+    }
+
+    originalFile = file;
+    compressBtn.disabled = false;
+
+    uploadArea.innerHTML = `
+      <div class="upload-icon" style="color: var(--accent);">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <h3>${file.name}</h3>
+      <p>${formatFileSize(file.size)}</p>
+    `;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('original-img').src = e.target.result;
+
+      const img = new Image();
+      img.onload = function() {
+        document.getElementById('original-dimensions').textContent = 
+          `${this.naturalWidth} × ${this.naturalHeight}`;
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+
+    document.getElementById('original-size').textContent = formatFileSize(file.size);
+  }
+
+  function compressImage() {
+    if (!originalFile) return;
+
+    compressBtn.disabled = true;
+    compressBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+    const quality = qualitySlider.value / 100;
+    const format = document.querySelector('input[name="format"]:checked').value;
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0, img.width, img.height);
+
+        let mimeType;
+        if (format === 'original') {
+          mimeType = originalFile.type;
+        } else {
+          mimeType = `image/${format}`;
+        }
+
+        canvas.toBlob(blob => {
+          if (!blob) {
+            alert('Compression failed.');
+            return;
+          }
+
+          const url = URL.createObjectURL(blob);
+          document.getElementById('compressed-img').src = url;
+
+          const compressedImg = new Image();
+          compressedImg.onload = function() {
+            document.getElementById('compressed-dimensions').textContent = 
+              `${this.naturalWidth} × ${this.naturalHeight}`;
+          };
+          compressedImg.src = url;
+
+          document.getElementById('compressed-size').textContent = formatFileSize(blob.size);
+          const savings = 1 - (blob.size / originalFile.size);
+          document.getElementById('savings').textContent = 
+            `${Math.round(savings * 100)}% smaller (${formatFileSize(originalFile.size - blob.size)} saved)`;
+
+          compressedFileBlob = blob;
+          resultContainer.style.display = 'block';
+          compressBtn.innerHTML = '<i class="fas fa-compress-alt"></i> Compress Image';
+        }, mimeType, quality);
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(originalFile);
+  }
+
+  function downloadImage() {
+    if (!compressedFileBlob) return;
+
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(compressedFileBlob);
+    a.download = 'compressed-image';
+    a.click();
+  }
+</script>
+</body>
