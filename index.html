@@ -178,9 +178,33 @@
         }
         
         // Compression function
-        compressBtn.addEventListener('click', function() {
-            alert('Compression would happen here in the full version!\nThis demo only shows the upload functionality.');
-        });
+        from PIL import Image, ImageDraw, ImageFont
+
+def compress_and_add_badge(input_path, output_path, quality=30):
+    img = Image.open(input_path)
+
+    # Compress image
+    img.save(output_path, "JPEG", quality=quality)
+
+    # Reload compressed image for badge
+    img = Image.open(output_path)
+    draw = ImageDraw.Draw(img)
+    
+    # Badge text and styling
+    text = "COMPRESSED"
+    font = ImageFont.load_default()
+    text_width, text_height = draw.textsize(text, font)
+
+    # Draw badge (rectangle + text)
+    draw.rectangle(((10, 10), (10 + text_width + 10, 10 + text_height + 5)), fill="red")
+    draw.text((15, 12), text, fill="white", font=font)
+
+    # Save final image
+    img.save(output_path)
+
+# Example
+compress_and_add_badge("original.jpg", "compressed_with_badge.jpg")
+        
     </script>
 </body>
 </html>
